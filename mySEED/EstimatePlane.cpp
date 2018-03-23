@@ -65,34 +65,34 @@ void EstimatePlane::setPenaltyParameter(const double hingePenalty, const double 
 
 void EstimatePlane::planeCompute(IplImage * disparityImage, int segmentTotal, UINT* labelImage,
 	IplImage* segmentImage, IplImage* optimizedDisparityImage) {
-	segmentTotal_ = segmentTotal;
+	segmentTotal_ = segmentTotal;   //分割的seg总数
 	width_ = disparityImage->width;
 	height_ = disparityImage->height;
 	stepSize_ = static_cast<int>(sqrt(static_cast<double>(width_*height_) / segmentTotal_) + 2.0);
 	segments_.resize(segmentTotal_);
 
-	allocateBuffer();
-	labelImageAssignment(labelImage);
+	allocateBuffer();  //分配空间
+	labelImageAssignment(labelImage);    //得到每个像素（x,y）所对应的超像素分割后的序号
 	/*cvNamedWindow("1");
 	cvShowImage("1", disparityImage);
 	cvWaitKey(0);*/
 	std::cout << "Input disparity image depth " << disparityImage->depth << std::endl;
 	float* disparityData;
 	disparityData = reinterpret_cast<float*>(malloc(width_*height_ * sizeof(float)));
-	if (disparityImage->depth == 16)
+	if (disparityImage->depth == 16)  //如果位深为16位，则需要进行转换
 		cvConvertScale(disparityImage, disparityImage, 255.0 / 65535.0);
 	// 将IPLImage数据格式转换为float格式 transform IplImage data to float data
 	for (int y = 0; y < height_; ++y) {
 		for (int x = 0; x < width_; ++x) {
 			//if (cvGet2D(disparityImage, y, x).val[0] != 0)
 			//std::cout << x << " " << y << " " << (int)(cvGet2D(disparityImage, y, x).val[0]) << std::endl;
-			disparityData[width_*y + x] = static_cast<float>(cvGet2D(disparityImage, y, x).val[0]);
+			disparityData[width_*y + x] = static_cast<float>(cvGet2D(disparityImage, y, x).val[0]);  //获取对应于每个xy的颜色（视差图中的）
 		}
 	}
-	estimateDisparityPlaneRANSAC(disparityData);
+	estimateDisparityPlaneRANSAC(disparityData);   //经过以下四个函数后得到每一个平面的参数
 	float* interpolatedDisparityImage = reinterpret_cast<float*>(malloc(width_*height_ * sizeof(float)));
 	interpolateDisparityImage(interpolatedDisparityImage, disparityData);
-	estimateDisparityPlaneRANSAC(interpolatedDisparityImage);
+	estimateDisparityPlaneRANSAC(interpolatedDisparityImage);//************
 	initializeOutlierFlagImage();
 	free(interpolatedDisparityImage);
 	//makeOutputImage(segmentImage, optimizedDisparityImage);
@@ -282,7 +282,7 @@ void EstimatePlane::disparityImageAssignment(const IplImage* disparityImage) {
 void EstimatePlane::labelImageAssignment(UINT* labelImage) {
 	for (int y = 0; y < height_; ++y) {
 		for (int x = 0; x < width_; ++x) {
-			labelImage_[y*width_ + x] = labelImage[y*width_ + x];
+			labelImage_[y*width_ + x] = labelImage[y*width_ + x];  //针对于x,y，其所在的seg
 		}
 	}
 }
