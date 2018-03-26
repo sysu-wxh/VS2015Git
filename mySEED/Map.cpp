@@ -58,7 +58,7 @@ void Map::outputFile(string filePath, int mode) {
 				if (colorErrRate < 0.1 && thetaErrRate < 7.0)   //说明颜色的相似度为96%以内且法向量的差值在10度以内
 				{
 					output << rTemp << " " << gTemp << " " << bTemp << endl;
-					rPre = r;
+					rPre = r; 
 					gPre = g;
 					bPre = b;                                                                                                                                    
 				}

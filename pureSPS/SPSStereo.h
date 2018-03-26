@@ -45,6 +45,7 @@ public:
 		IplImage* disparityImage,
 		std::vector< std::vector<double> >& disparityPlaneParameters,
 		std::vector< std::vector<int> >& boundaryLabels);
+	void SPSStereo::getSegmentAroundIndex(std::vector< std::vector<int> >& segmentAroundIndex, int segmentNums, int outputNum);
 
 private:
 	//segment类（目测为分割相关的类）

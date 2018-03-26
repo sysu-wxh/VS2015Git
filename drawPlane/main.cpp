@@ -187,7 +187,7 @@ void reconstrction3D() {
 }
 
 int main(int argc, char *argv[]) {
-	std::string planeSegmentationFileStr = "I://Master//dataset//08-2018-03-15-LW//output00_199b.txt";
+	std::string planeSegmentationFileStr = "I://Master//dataset//08-2018-03-15-LW//output00_2b.txt";
 	//std::string planeSegmentationFileStr = "F://dataset//data_stereo_flow//training//planeReconstructionResult//000098_10.txt";
 	//std::string planeSegmentationFileStr = "F://dataset//middlebury//2001//png//barn2//output.txt";
 	//std::string planeSegmentationFileStr = "F://dataset//data_stereo_flow//testing//planeReconstructionResult//000000_10.txt";

@@ -27,6 +27,10 @@ public:
 	void getDisparityPlane(double** planeFunction);
 	void performSmoothingSegmentation();
 	void freeBuffer();
+
+	//得到seg的周围图
+	void getSegmentAroundIndex(std::vector< std::vector<int> >& segmentAroundIndex, int segmentNums, int outputNum);
+
 	// for plane reconstruction
 	void planeGetposition(std::vector<double>& x, std::vector<double>& y) {
 		x.resize(segmentTotal_);
@@ -302,6 +306,8 @@ private:
 	float* disparityImage_;
 	std::vector<Segment> segments_;
 	std::vector< std::vector<int> > boundaryIndexMatrix_;
+
+	
 
 	double param_cu, param_cv, param_f, param_base;
 };

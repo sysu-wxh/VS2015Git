@@ -1004,3 +1004,32 @@ void SPSStereo::makeSegmentBoundaryData(std::vector< std::vector<double> >& disp
 		boundaryLabels[boundaryIndex][2] = boundaries_[boundaryIndex].type();
 	}
 }
+
+void SPSStereo::getSegmentAroundIndex(std::vector< std::vector<int> >& segmentAroundIndex, int segmentNums, int outputNum) {
+	int boundariesTotals = boundaries_.size();
+	segmentAroundIndex.resize(segmentNums);  //初始化seg周围索引变量大小为超像素的个数
+
+	for (int boundariseIndex = 0; boundariseIndex < boundariesTotals; boundariseIndex++) {
+		int temp0 = boundaries_[boundariseIndex].segmentIndex(0);
+		int temp1 = boundaries_[boundariseIndex].segmentIndex(1);
+		//所有边界遍历结束后。segmentAroundIndex的个数一定会满足超像素的个数，因为边界是连接了所有的seg的（也就是超像素），之后对于每个向量进行去重就可以，。这样
+		//就得到了一个seg周围所有挨着的seg
+		segmentAroundIndex[temp0].push_back(temp1);  //对应0的邻居1加入
+		segmentAroundIndex[temp1].push_back(temp0);  //对应1的邻居0加入
+	}
+
+	//	for (int segmentIndex = 0; segmentIndex < segmentNums; segmentIndex++){
+	//	sort(segmentAroundIndex[segmentIndex].begin(), segmentAroundIndex[segmentIndex].end());  //对元素进行排序
+	//		segmentAroundIndex[segmentIndex].erase( unique(segmentAroundIndex[segmentIndex].begin(), segmentAroundIndex[segmentIndex].end()),
+	//			segmentAroundIndex[segmentIndex].end());   //去掉重复的元素，得到唯一的相邻seg
+	//}
+
+	for (int i = 0; i < outputNum; i++) {
+		std::cout << "segment " << i << ":";
+		for (int j = 0; j < segmentAroundIndex[i].size(); j++)
+		{
+			std::cout << segmentAroundIndex[i][j] << "-";
+		}
+		std::cout << "" << std::endl;
+	}
+}

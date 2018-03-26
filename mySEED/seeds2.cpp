@@ -2406,7 +2406,7 @@ void SEEDS::planeCalculateVertex(std::vector<VERTEX>& result) {
 			double zTemp = param_f*param_base / disparity;*/
 			//if (vertex[i].u[t] < 0 || vertex[i].v[t] < 0)
 			//	cout << vertex[i].u[t] << " " << vertex[i].v[t] << endl;
-			result[i].u.push_back(vertex[i].u[t]);
+			result[i].u.push_back(vertex[i].u[t]);   //将每一个seg边界的uv放入result中。也就是第i个seg所具有的的轮廓都加进去
 			result[i].v.push_back(vertex[i].v[t]);
 		}
 	}

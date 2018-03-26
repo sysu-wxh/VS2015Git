@@ -59,9 +59,9 @@ int main(int argc, char* argv[]) {
 	int numlabels = 10;
 	int width(0), height(0);
 	//double cu = 607.1928, cv = 185.2157, f = 718.856, base = 0.54;
-	double cu = 601.8873, cv = 183.1104, f = 707.091, base = 0.54;
+	double cu = 601.8873, cv = 183.1104, f = 707.091, base = 0.54;   //相机标定后
 	//double cu = 0.0, cv = 0.0, f = 1.0, base = 1.0;
-	const int startNum = 0, imageNum = 200, imgStep = 2;
+	const int startNum = 0, imageNum = 2, imgStep = 2;
 	char baseName[32];
 
 	ifstream pose_file(pose_name.c_str(), ios::in);   // input pose file
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
 	cout << "Pose file read complete" << endl;
 	Map map = Map();
 	map.setPrecision(precision);
-	string output_name4 = root_str + "output00_199b.txt";
+	string output_name4 = root_str + "output00_2b.txt";
 	for (int imageIndex = startNum; imageIndex < imageNum; imageIndex += imgStep) {
 		sprintf_s(baseName, "%06d.png", imageIndex);
 		cout << "processing number = " << baseName << endl;
@@ -210,12 +210,12 @@ int main(int argc, char* argv[]) {
 		imgSize.width = width, imgSize.height = height;
 		optimizedDisparityImage = cvCreateImage(imgSize, 8, 1);
 		segmentImage = cvCreateImage(imgSize, 16, 1);
-		estimatePlane.planeCompute(disparityImage, seeds.count_superpixels(), seeds.labels[nr_levels - 1], segmentImage, optimizedDisparityImage);
+		estimatePlane.planeCompute(disparityImage, seeds.count_superpixels(), seeds.labels[nr_levels - 1], segmentImage, optimizedDisparityImage);  //计算出了平面方程的三个参数以及对外点进行了标注
 
-		double** planeFunction;   //give each pixel a plane function
+		double** planeFunction;   //give each pixel a plane function  给每一个像素赋值一个平面函数
 		planeFunction = new double*[width*height];
 		for (int i = 0; i < width*height; ++i)
-			planeFunction[i] = new double[3];
+			planeFunction[i] = new double[3];   //每个像素有三个位置（应该是用来放参数或者颜色）
 		estimatePlane.getDisparityPlane(planeFunction);
 		end = clock();
 		double elapsed_secs = double(end - start) / CLOCKS_PER_SEC;
@@ -225,31 +225,33 @@ int main(int argc, char* argv[]) {
 		//seeds.extractVertex(seeds.count_superpixels());
 		seeds.findcontour();
 		estimatePlane.performSmoothingSegmentation();
-		estimatePlane.makeOutputImage(segmentImage, optimizedDisparityImage);
+		estimatePlane.makeOutputImage(segmentImage, optimizedDisparityImage);  //optimizedDisparityImage是优化后的视差图
 
-		std::vector< std::vector<double> > disparityPlaneParameters;
-		std::vector< std::vector<int> > boundaryLabels;
+		std::vector< std::vector<double> > disparityPlaneParameters;  //定义视差平面的参数
+		std::vector< std::vector<int> > boundaryLabels;   //边界标记
 		estimatePlane.makeSegmentBoundaryData(disparityPlaneParameters, boundaryLabels);
 
-		IplImage* segmentBoundaryImage;
+		IplImage* segmentBoundaryImage;  //seg的边界图
 		segmentBoundaryImage = cvCreateImage(imgSize, 8, 3);
-		makeSegmentBoundaryImage(img, segmentImage, boundaryLabels, segmentBoundaryImage);
+		makeSegmentBoundaryImage(img, segmentImage, boundaryLabels, segmentBoundaryImage);  //传入了原图。分割图，边界标记，以及需要输出的seg边界图
 		//cvNamedWindow("Output");
 		//cvNamedWindow("Disparity");
 		//cvShowImage("Disparity", optimizedDisparityImage);
 		//cvShowImage("Output", segmentBoundaryImage);
 		//cvWaitKey(0);
-		cvSaveImage((output_str5 + baseName).c_str(), optimizedDisparityImage);
+		cvSaveImage((output_str5 + baseName).c_str(), optimizedDisparityImage);   //输出优化后的视差图
 		
-		estimatePlane.cameraParameterInitialization(cu, cv, f, base);
-		vector<VERTEX> vertexResult;
-		vector<VERTEX3D> vertexProjectResult;
+		estimatePlane.cameraParameterInitialization(cu, cv, f, base);   //相机参数的初始化
+		vector<VERTEX> vertexResult;   //关于uv的向量
+		vector<VERTEX3D> vertexProjectResult;  //关于xyz的向量
 		//vertexProjectResult.resize(seeds.count_superpixels());
 		seeds.planeCalculateVertex(vertexResult);
-		estimatePlane.vertexProjectAndStore(vertexResult);    // 这里
+		estimatePlane.vertexProjectAndStore(vertexResult);    // 这里   顶点的投影与保存
 		vertexResult.clear();
 		estimatePlane.setInputColor(img);
-		estimatePlane.projectPlane();
+		estimatePlane.projectPlane();   //投影为平面   求计算思路~~~~~~~
+		std::vector<std::vector<int>> segmentAroundIndex_;
+		estimatePlane.getSegmentAroundIndex(segmentAroundIndex_,seeds.count_superpixels(),50);
 		vector<vector<double>> finalResult;
 		vertexProjectResult = estimatePlane.getProjectResult(finalResult, pose[imageIndex]);     // 这里有问题
 		// DRAW SEEDS OUTPUT

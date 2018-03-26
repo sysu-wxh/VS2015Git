@@ -71,6 +71,7 @@ int main(int argc, char* argv[]) {
 		//将视差图与seg图保存的变量存入文件）
 		cvSaveImage(disparityFilename.c_str(), disparityImage);
 		cvSaveImage(sgmDisparityFilename.c_str(), sgmImage);
+		
 		//IplImage* segmentBoundaryImage;
 		//segmentBoundaryImage = cvCreateImage(imgSize, 8, 3);
 		//makeSegmentBoundaryImage(leftImage, segmentImage, boundaryLabels, segmentBoundaryImage);

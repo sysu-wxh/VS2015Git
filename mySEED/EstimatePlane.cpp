@@ -93,7 +93,7 @@ void EstimatePlane::planeCompute(IplImage * disparityImage, int segmentTotal, UI
 	float* interpolatedDisparityImage = reinterpret_cast<float*>(malloc(width_*height_ * sizeof(float)));
 	interpolateDisparityImage(interpolatedDisparityImage, disparityData);
 	estimateDisparityPlaneRANSAC(interpolatedDisparityImage);//************
-	initializeOutlierFlagImage();
+	initializeOutlierFlagImage();  //找外点并标记
 	free(interpolatedDisparityImage);
 	//makeOutputImage(segmentImage, optimizedDisparityImage);
 	//performSmoothingSegmentation();
@@ -121,7 +121,7 @@ void EstimatePlane::vertexProjectAndStore(const vector<VERTEX>& result) {
 	for (int i = 0; i < size; ++i) {
 		segments_[i].clearVertex();
 		for (int t = 0; t < result[i].u.size(); ++t) {
-			double disparity = segments_[i].estimatedDisparity(result[i].u[t], result[i].v[t]);
+			double disparity = segments_[i].estimatedDisparity(result[i].u[t], result[i].v[t]);   //算出对应于一个seg中的一组uv的深度z（或者说是视差）
 			//cout << "disparity = " << disparity << endl;
 			//cout << result[i].u[t] << " " << result[i].v[t] << endl;
 			double xTemp = ((double)result[i].u[t] - param_cu) * param_base / disparity;
@@ -135,8 +135,8 @@ void EstimatePlane::vertexProjectAndStore(const vector<VERTEX>& result) {
 
 void EstimatePlane::setInputColor(const IplImage * leftImage) {
 	for (int i = 0; i < segmentTotal_; ++i) {
-		int temp_u = static_cast<int>(segments_[i].position(0));
-		int temp_v = static_cast<int>(segments_[i].position(1));
+		int temp_u = static_cast<int>(segments_[i].position(0));  //得到第i个seg的x平均值
+		int temp_v = static_cast<int>(segments_[i].position(1));   //得到第i个seg的y的平均值
 		CvScalar color;
 		if (temp_u >= 0 && temp_v >= 0)
 			color = cvGet2D(leftImage, temp_v, temp_u);
@@ -160,10 +160,10 @@ void EstimatePlane::projectPlane() {
 			tempDisparity = segments_[i].estimatedDisparity(tempX, tempY);
 		else
 			tempDisparity = -1;
-		double x1p = (tempX - param_cu) * param_base / tempDisparity;
+		double x1p = (tempX - param_cu) * param_base / tempDisparity;  //？？？？？？怎么算的
 		double y1p = (tempY - param_cv) * param_base / tempDisparity;
 		double z1p = param_f * param_base / tempDisparity;
-		segments_[i].setProjectCenter(x1p, y1p, z1p);
+		segments_[i].setProjectCenter(x1p, y1p, z1p);   //设置投影中心
 
 		double temp = segments_[i].planeParameter(0) * param_cu
 			+ segments_[i].planeParameter(1) * param_cv
@@ -172,7 +172,7 @@ void EstimatePlane::projectPlane() {
 		double tempP2 = -param_f * segments_[i].planeParameter(1) / temp;
 		double tempP3 = param_base * param_f / temp;
 		//std::cout << segments_[i].planeParameter(2) << " " << tempP2 << " " << tempP3 << endl;
-		segments_[i].setProjectCoefficients(tempP1, tempP2, tempP3);
+		segments_[i].setProjectCoefficients(tempP1, tempP2, tempP3);    //设置了三个参数（是实际空间中的平面参数）
 	}
 }
 
@@ -192,15 +192,15 @@ std::vector<VERTEX3D> EstimatePlane::getProjectResult(std::vector<std::vector<do
 		if (segments_[i].getProjectCenter(2) > 25.0)
 			continue;*/
 		bool judge = false;
-		double c1p = segments_[i].getProjectCenter(0),
-			c2p = segments_[i].getProjectCenter(1),
-			c3p = segments_[i].getProjectCenter(2);
+		double c1p = segments_[i].getProjectCenter(0),  //得到中心坐标
+		   	   c2p = segments_[i].getProjectCenter(1),
+			   c3p = segments_[i].getProjectCenter(2);
 		for (int t = 0; t < segments_[i].getVertexSize(); ++t) {
-			double x1p = segments_[i].getProjectX(t),
-				y1p = segments_[i].getProjectY(t),
-				z1p = segments_[i].getProjectZ(t);
+			double x1p = segments_[i].getProjectX(t),   //得到seg图中的每一个seg的xyz
+				   y1p = segments_[i].getProjectY(t),
+				   z1p = segments_[i].getProjectZ(t);
 			//cout << z1p << endl;
-			double u1t = segments_[i].getVertexU(t);
+			double u1t = segments_[i].getVertexU(t);  //得到每一个seg的uv
 			double v1t = segments_[i].getVertexV(t);
 			
 			if (z1p > 16.0 || z1p < 0.0) {
@@ -227,7 +227,7 @@ std::vector<VERTEX3D> EstimatePlane::getProjectResult(std::vector<std::vector<do
 		double c2 = segments_[i].getProjectCenter(1);
 		double c3 = segments_[i].getProjectCenter(2);
 
-		double c1t = pose.val[0][0] * c1 + pose.val[0][1] * c2 + pose.val[0][2] * c3 + pose.val[0][3];
+		double c1t = pose.val[0][0] * c1 + pose.val[0][1] * c2 + pose.val[0][2] * c3 + pose.val[0][3];  //得到在现实中的seg的中心
 		double c2t = pose.val[1][0] * c1 + pose.val[1][1] * c2 + pose.val[1][2] * c3 + pose.val[1][3];
 		double c3t = pose.val[2][0] * c1 + pose.val[2][1] * c2 + pose.val[2][2] * c3 + pose.val[2][3];
 
@@ -235,18 +235,18 @@ std::vector<VERTEX3D> EstimatePlane::getProjectResult(std::vector<std::vector<do
 		temp.push_back(c2t);
 		temp.push_back(c3t);
 		// coefficients
-		double tempP1 = segments_[i].getProjectCoefficients(0);
+		double tempP1 = segments_[i].getProjectCoefficients(0);    
 		double tempP2 = segments_[i].getProjectCoefficients(1);
 		double tempP3 = segments_[i].getProjectCoefficients(2);
-		double coeff3 = pose.val[2][0] * tempP1 + pose.val[2][1] * tempP2 + pose.val[2][2] * (-1.0);
-		double P1 = -(pose.val[0][0] * tempP1 + pose.val[0][1] * tempP2 + pose.val[0][2] * (-1.0)) / coeff3;
+		double coeff3 = pose.val[2][0] * tempP1 + pose.val[2][1] * tempP2 + pose.val[2][2] * (-1.0);    
+		double P1 = -(pose.val[0][0] * tempP1 + pose.val[0][1] * tempP2 + pose.val[0][2] * (-1.0)) / coeff3;   //得到现实中的平面参数
 		double P2 = -(pose.val[1][0] * tempP1 + pose.val[1][1] * tempP2 + pose.val[1][2] * (-1.0)) / coeff3;
 		double P3 = c3t - P1 * c1t - P2 * c2t;
 		temp.push_back(P1);
 		temp.push_back(P2);
 		temp.push_back(P3);
 		// color
-		temp.push_back(segments_[i].getPlaneColorRGB(0));
+		temp.push_back(segments_[i].getPlaneColorRGB(0));  //得到每一个seg的颜色
 		temp.push_back(segments_[i].getPlaneColorRGB(1));
 		temp.push_back(segments_[i].getPlaneColorRGB(2));
 		// vertex number
@@ -268,6 +268,13 @@ std::vector<VERTEX3D> EstimatePlane::getProjectResult(std::vector<std::vector<do
 		planeOutput.push_back(temp);
 		vertexProjectResult.push_back(temp3D);
 	}
+	
+	//for (int i = 0; i < 52; i++)   //说明segments_的序号是从二维图中左上角开始的，还是一行有51个块。
+	//{
+	//	std::cout << "boundary" << i << ":"<< boundaries_[i].segmentIndex(0) << " + " << boundaries_[i].segmentIndex(1) << std::endl;  //可以返回一条边界两边的seg的索引
+		//std::cout << "neighbor:" << i <<"  " <<segments_[i].getVertexU(0)<<"+"<<segments_[i].getVertexV(0)<< std::endl;
+	//}
+	
 	return vertexProjectResult;
 }
 
@@ -282,7 +289,7 @@ void EstimatePlane::disparityImageAssignment(const IplImage* disparityImage) {
 void EstimatePlane::labelImageAssignment(UINT* labelImage) {
 	for (int y = 0; y < height_; ++y) {
 		for (int x = 0; x < width_; ++x) {
-			labelImage_[y*width_ + x] = labelImage[y*width_ + x];  //针对于x,y，其所在的seg
+			labelImage_[y*width_ + x] = labelImage[y*width_ + x];  //针对于x,y，其所在的seg,相当于把seed中存储的超像素索引给了labelImage_
 		}
 	}
 }
@@ -500,7 +507,7 @@ void EstimatePlane::initializeOutlierFlagImage() {
 	memset(outlierFlagImage_, 0, width_*height_);
 	for (int y = 0; y < height_; ++y) {
 		for (int x = 0; x < width_; ++x) {
-			if (disparityImage_[width_*y + x] == 0) {
+			if (disparityImage_[width_*y + x] == 0) {   //是0的地方则记为是外点
 				outlierFlagImage_[width_*y + x] = 255;
 				continue;
 			}
@@ -717,15 +724,15 @@ void EstimatePlane::buildSegmentConfiguration() {
 		segments_[segmentIndex].clearConfiguration();
 	}
 	boundaries_.clear();
-	boundaryIndexMatrix_.resize(segmentTotal_);
+	boundaryIndexMatrix_.resize(segmentTotal_);   //将边界索引矩阵初始化大小为总的seg数，也就是seeds中超像素的个数
 	for (int i = 0; i < segmentTotal_; ++i) {
-		boundaryIndexMatrix_[i].resize(segmentTotal_);
-		for (int j = 0; j < segmentTotal_; ++j) boundaryIndexMatrix_[i][j] = -1;
+		boundaryIndexMatrix_[i].resize(segmentTotal_);  //相当于初始化出了一个segmentTotal_xsegmentTotal_大小的矩阵
+		for (int j = 0; j < segmentTotal_; ++j) boundaryIndexMatrix_[i][j] = -1;  //并且置为了-1
 	}
 
 	for (int y = 0; y < height_; ++y) {
 		for (int x = 0; x < width_; ++x) {
-			int pixelSegmentIndex = labelImage_[width_*y + x];
+			int pixelSegmentIndex = labelImage_[width_*y + x];   //得到xy所在的seg的索引
 			segments_[pixelSegmentIndex].appendSegmentPixel(x, y);
 			segments_[pixelSegmentIndex].addPixel(x, y);
 			if (disparityImage_[width_*y + x] > 0 && outlierFlagImage_[width_*y + x] == 0) {
@@ -814,7 +821,7 @@ void EstimatePlane::makeSegmentBoundaryData(std::vector<std::vector<double>>& di
 	disparityPlaneParameters.resize(segmentTotal);
 	for (int segmentIndex = 0; segmentIndex < segmentTotal; ++segmentIndex) {
 		disparityPlaneParameters[segmentIndex].resize(3);
-		disparityPlaneParameters[segmentIndex][0] = segments_[segmentIndex].planeParameter(0);
+		disparityPlaneParameters[segmentIndex][0] = segments_[segmentIndex].planeParameter(0);  //得到每一个平面的参数
 		disparityPlaneParameters[segmentIndex][1] = segments_[segmentIndex].planeParameter(1);
 		disparityPlaneParameters[segmentIndex][2] = segments_[segmentIndex].planeParameter(2);
 		/*cout << segments_[segmentIndex].planeParameter(0) << " "
@@ -826,7 +833,7 @@ void EstimatePlane::makeSegmentBoundaryData(std::vector<std::vector<double>>& di
 	boundaryLabels.resize(boundaryTotal);
 	for (int boundaryIndex = 0; boundaryIndex < boundaryTotal; ++boundaryIndex) {
 		boundaryLabels[boundaryIndex].resize(3);
-		boundaryLabels[boundaryIndex][0] = boundaries_[boundaryIndex].segmentIndex(0);
+		boundaryLabels[boundaryIndex][0] = boundaries_[boundaryIndex].segmentIndex(0);  //得到边界的左右seg的序号以及边界的类型
 		boundaryLabels[boundaryIndex][1] = boundaries_[boundaryIndex].segmentIndex(1);
 		boundaryLabels[boundaryIndex][2] = boundaries_[boundaryIndex].type();
 	}
@@ -836,9 +843,9 @@ void EstimatePlane::makeSegmentBoundaryData(std::vector<std::vector<double>>& di
 void EstimatePlane::getDisparityPlane(double ** planeFunction) {
 	for (int y = 0; y < height_; ++y) {
 		for (int x = 0; x < width_; ++x) {
-			int pixelSegmentIndex = labelImage_[width_*y + x];
+			int pixelSegmentIndex = labelImage_[width_*y + x];  //得到每个pixel所在的seg索引
 			//std::cout << pixelSegmentIndex << std::endl;
-			planeFunction[y*width_ + x][0] = segments_[pixelSegmentIndex].planeParameter(0);
+			planeFunction[y*width_ + x][0] = segments_[pixelSegmentIndex].planeParameter(0);  //得到每个像素在对应平面下的参数，导致的结果就是每个像素只要是相同的seg那参数都是一样的，也就保证了一个平面
 			planeFunction[y*width_ + x][1] = segments_[pixelSegmentIndex].planeParameter(1);
 			planeFunction[y*width_ + x][2] = segments_[pixelSegmentIndex].planeParameter(2);
 			//std::cout << "p1 = " << planeFunction[y*width_ + x][0]
@@ -846,5 +853,34 @@ void EstimatePlane::getDisparityPlane(double ** planeFunction) {
 			//	<< " p3 = " << planeFunction[y*width_ + x][2] << std::endl;
 		}
 		//std::cout << "----------------------------------------------------------------" << std::endl;
+	}
+}
+
+void EstimatePlane::getSegmentAroundIndex(std::vector< std::vector<int> >& segmentAroundIndex, int segmentNums, int outputNum) {
+	int boundariesTotals = boundaries_.size();
+	segmentAroundIndex.resize(segmentNums);  //初始化seg周围索引变量大小为超像素的个数
+
+	for (int boundariseIndex = 0; boundariseIndex < boundariesTotals; boundariseIndex++){
+		int temp0 = boundaries_[boundariseIndex].segmentIndex(0);
+		int temp1 = boundaries_[boundariseIndex].segmentIndex(1);
+		//所有边界遍历结束后。segmentAroundIndex的个数一定会满足超像素的个数，因为边界是连接了所有的seg的（也就是超像素），之后对于每个向量进行去重就可以，。这样
+		//就得到了一个seg周围所有挨着的seg
+		segmentAroundIndex[temp0].push_back(temp1);  //对应0的邻居1加入
+		segmentAroundIndex[temp1].push_back(temp0);  //对应1的邻居0加入
+	}
+
+	for (int segmentIndex = 0; segmentIndex < segmentNums; segmentIndex++){
+		sort(segmentAroundIndex[segmentIndex].begin(), segmentAroundIndex[segmentIndex].end());  //对元素进行排序
+		segmentAroundIndex[segmentIndex].erase( unique(segmentAroundIndex[segmentIndex].begin(), segmentAroundIndex[segmentIndex].end()),
+												segmentAroundIndex[segmentIndex].end());   //去掉重复的元素，得到唯一的相邻seg
+	}
+
+	for (int i = 0; i < outputNum; i++){
+		std::cout << "segment " << i << ":";
+		for (int  j = 0; j < segmentAroundIndex[i].size(); j++)
+		{
+			std::cout << segmentAroundIndex[i][j] << "-";
+		}
+		std::cout << "" << std::endl;
 	}
 }
